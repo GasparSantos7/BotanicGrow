@@ -1,0 +1,12 @@
+specVersion: "v1"
+serviceId: "firestore backend"
+location: "europe-west1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "fdcccv"
+      cloudSql:
+        instanceId: "firestore backend-sql"
+      # schemaValidation: "COMPATIBLE"
+connectorDirs: ["./connector"]
