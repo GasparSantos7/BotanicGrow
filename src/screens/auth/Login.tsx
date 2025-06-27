@@ -52,7 +52,13 @@ const LoginScreen = ({ navigation }: any) => {
         await AsyncStorage.removeItem('userPassword');
       }
 
-      navigation.replace('HomeTabs');
+      // Verificar se o email está verificado
+      const user = auth.currentUser;
+      if (user && !user.emailVerified) {
+        navigation.replace('EmailVerification');
+      } else {
+        navigation.replace('HomeTabs');
+      }
     } catch (error: any) {
       setLoading(false);
       setMessage('Erro: ' + error.message);
@@ -92,6 +98,10 @@ const LoginScreen = ({ navigation }: any) => {
         />
         <Text style={styles.rememberText}>Lembrar-me</Text>
       </View>
+
+      <TouchableOpacity onPress={() => navigation.navigate('PasswordReset')} style={styles.forgotPasswordButton}>
+        <Text style={styles.forgotPasswordText}>Esqueceu a palavra-passe?</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity
         style={[styles.button, { backgroundColor: loading ? '#bbb' : '#4CAF50' }]}
@@ -192,6 +202,13 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 16,
     color: '#555',
+  },
+  forgotPasswordButton: {
+    marginBottom: 15,
+  },
+  forgotPasswordText: {
+    color: '#2E7D32',
+    fontSize: 16,
   },
 });
 

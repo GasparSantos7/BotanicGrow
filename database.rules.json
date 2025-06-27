@@ -1,0 +1,17 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "sensors": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "humidity_history": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$sensorId": {
+        ".indexOn": ["timestamp"]
+      }
+    }
+  }
+} 

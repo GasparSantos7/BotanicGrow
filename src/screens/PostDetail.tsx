@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { db, auth } from '../firebaseConfig';
+import { auth, firestore } from '../firebaseConfig';
 import { collection, addDoc, query, orderBy, onSnapshot, Timestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, RouteProp } from '@react-navigation/native';
@@ -62,7 +62,7 @@ const PostDetail = ({ route, navigation }: Props) => {
       },
     });
 
-    const commentsRef = collection(db, `posts/${post.id}/comments`);
+    const commentsRef = collection(firestore, `posts/${post.id}/comments`);
     const q = query(commentsRef, orderBy('createdAt', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -100,11 +100,11 @@ const PostDetail = ({ route, navigation }: Props) => {
     };
 
     try {
-      const commentsRef = collection(db, `posts/${post.id}/comments`);
+      const commentsRef = collection(firestore, `posts/${post.id}/comments`);
       await addDoc(commentsRef, comment);
       
       // Update the post's comment count
-      const postRef = doc(db, 'posts', post.id);
+      const postRef = doc(firestore, 'posts', post.id);
       await updateDoc(postRef, {
         commentCount: increment(1)
       });

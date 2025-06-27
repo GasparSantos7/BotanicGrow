@@ -13,7 +13,7 @@ import {
   Platform,
   ScrollView
 } from 'react-native';
-import { db, auth } from '../firebaseConfig';
+import { auth, firestore } from '../firebaseConfig';
 import { collection, addDoc, getDocs, query, orderBy, onSnapshot, Timestamp, getCountFromServer } from 'firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -74,14 +74,14 @@ const Forum = () => {
     };
 
     try {
-      const postsRef = collection(db, 'posts');
+      const postsRef = collection(firestore, 'posts');
       const docRef = await addDoc(postsRef, post);
       console.log('Post salvo com sucesso! ID:', docRef.id);
       setTitle('');
       setDescription('');
       Alert.alert('Sucesso', 'Publicação criada com sucesso');
     } catch (error: any) {
-      console.error('Erro ao salvar  o post:', error);
+      console.error('Erro ao salvar o post:', error);
       Alert.alert('Erro', 'Falha ao criar a publicação: ' + error.message);
     } finally {
       setIsSubmitting(false);
@@ -91,14 +91,14 @@ const Forum = () => {
   const fetchPosts = () => {
     console.log('Iniciando busca de posts...');
     setLoading(true);
-    const postsRef = collection(db, 'posts');
+    const postsRef = collection(firestore, 'posts');
     const q = query(postsRef, orderBy('createdAt', 'desc'));
     
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const postsData = await Promise.all(
         snapshot.docs.map(async (doc) => {
           const postData = doc.data() as Post;
-          const commentsRef = collection(db, `posts/${doc.id}/comments`);
+          const commentsRef = collection(firestore, `posts/${doc.id}/comments`);
           const commentsSnapshot = await getCountFromServer(commentsRef);
           return {
             ...postData,
