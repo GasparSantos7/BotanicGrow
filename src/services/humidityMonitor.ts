@@ -23,8 +23,6 @@ class HumidityMonitor {
     this.plantInfo = {
       '1': { name: 'Vaso 1', type: 'Planta Geral', optimalHumidity: { min: 30, max: 80 } },
       '2': { name: 'Vaso 2', type: 'Planta Geral', optimalHumidity: { min: 30, max: 80 } },
-      '3': { name: 'Vaso 3', type: 'Planta Geral', optimalHumidity: { min: 30, max: 80 } },
-      '4': { name: 'Vaso 4', type: 'Planta Geral', optimalHumidity: { min: 30, max: 80 } },
     };
   }
 
@@ -147,7 +145,7 @@ class HumidityMonitor {
   getAllStatus() {
     const status: { [key: string]: { value: number | null; plant: PlantInfo | null } } = {};
     
-    ['1', '2', '3', '4'].forEach(sensorId => {
+    ['1', '2'].forEach(sensorId => {
       status[sensorId] = {
         value: this.lastValues[sensorId] || null,
         plant: this.plantInfo[sensorId] || null

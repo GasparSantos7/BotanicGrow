@@ -7,7 +7,6 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { Timestamp } from "firebase/firestore";
 
 import HomeScreen from "./screens/Home";
-import HumidityDashboard from "./screens/DashboardHumidade";
 import Bomba from "./screens/Boma";
 import Ventoinha from "./screens/Ventoinha";
 import LoginScreen from "./screens/auth/Login";
@@ -20,7 +19,6 @@ import Forum from "./screens/forum";
 import PostDetail from "./screens/PostDetail";
 import HumidityHistoryScreen from "./screens/HumidityHistoryScreen";
 import AlertSettingsScreen from "./screens/AlertSettings";
-import AdvancedCharts from "./components/AdvancedCharts";
 
 export type RootStackParamList = {
   Login: undefined;
@@ -29,10 +27,8 @@ export type RootStackParamList = {
   EmailVerification: undefined;
   HomeTabs: undefined;
   PotDetail: { id: number };
-  Dashboard: undefined;
   HumidityHistory: undefined;
   AlertSettings: undefined;
-  AdvancedCharts: undefined;
   PostDetail: {
     post: {
       id: string;
@@ -108,7 +104,6 @@ const AppNavigator = () => {
       <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
       <Stack.Screen name="HomeTabs" component={HomeTabs} />
       <Stack.Screen name="PotDetail" component={PotDetailScreen} />
-      <Stack.Screen name="Dashboard" component={HumidityDashboard} />
       <Stack.Screen name="HumidityHistory" component={HumidityHistoryScreen} />
       <Stack.Screen
         name="AlertSettings"
@@ -116,18 +111,6 @@ const AppNavigator = () => {
         options={{
           headerShown: true,
           headerTitle: "Configurações de Alertas",
-          headerTitleStyle: {
-            color: "#2E7D32",
-          },
-          headerTintColor: "#2E7D32",
-        }}
-      />
-      <Stack.Screen
-        name="AdvancedCharts"
-        component={AdvancedCharts}
-        options={{
-          headerShown: true,
-          headerTitle: "Análise Avançada",
           headerTitleStyle: {
             color: "#2E7D32",
           },

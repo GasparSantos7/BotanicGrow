@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Switch, StyleSheet, Alert, SafeAreaView, TouchableOpacity } from 'react-native';
-import { getDatabase, ref, onValue, set } from 'firebase/database';
+import { getDatabase, ref, onValue, set, get, set as setDb, ref as dbRef } from 'firebase/database';
 import { app } from '../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -39,14 +39,30 @@ export default function ControloBomba() {
   }, []);
 
   const toggleSwitch = async () => {
-    if (isAutoWateringEnabled && isAutoActive) {
-      Alert.alert('Modo Automático Ativo', 'A bomba está a ser controlada automaticamente. Desative a rega automática para usar o controlo manual.');
-      return;
-    }
     try {
       const releRef = ref(database, 'controle/rele');
-      await set(releRef, !isEnabled);
-      console.log("Estado da bomba atualizado:", !isEnabled);
+      const manualOverrideRef = dbRef(database, 'controle/manual_override');
+      const newState = !isEnabled;
+      await set(releRef, newState);
+      await set(manualOverrideRef, true);
+
+      // Limpa temporizador anterior, se existir
+      if (window.manualOverrideTimeout) {
+        clearTimeout(window.manualOverrideTimeout);
+      }
+
+      // Se a bomba foi ligada, inicia temporizador para desligar após 5 minutos
+      if (newState) {
+        window.manualOverrideTimeout = setTimeout(async () => {
+          await set(releRef, false); // Desliga a bomba
+          await set(manualOverrideRef, false); // Remove override
+        }, 300000); // 5 minutos
+      } else {
+        // Se desligaste manualmente, remove override imediatamente
+        await set(manualOverrideRef, false);
+      }
+
+      console.log("Estado da bomba atualizado:", newState);
     } catch (error) {
       console.error("Erro ao atualizar estado do relé:", error);
       Alert.alert("Erro", "Não foi possível alterar o estado da bomba");
@@ -86,21 +102,10 @@ export default function ControloBomba() {
             style={styles.switch}
             disabled={isAutoWateringEnabled && isAutoActive}
           />
-          {isAutoWateringEnabled && (
-            <Text style={{ color: isAutoActive ? '#e67e22' : '#2ecc71', marginTop: 8, fontWeight: 'bold' }}>
-              {isAutoActive ? 'Modo Automático: bomba controlada automaticamente' : 'Modo Automático: bomba disponível para controlo manual'}
-            </Text>
-          )}
         </View>
 
         <View style={styles.infoContainer}>
           <Text style={styles.infoTitle}>Informações</Text>
-          <View style={styles.infoItem}>
-            <MaterialCommunityIcons name="information" size={24} color="#2ecc71" />
-            <Text style={styles.infoText}>
-              A bomba de água é utilizada para regar automaticamente as suas plantas quando a humidade está baixa.
-            </Text>
-          </View>
           <View style={styles.infoItem}>
             <MaterialCommunityIcons name="alert-circle" size={24} color="#f39c12" />
             <Text style={styles.infoText}>

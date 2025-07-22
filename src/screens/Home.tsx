@@ -10,6 +10,10 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  ActionSheetIOS,
+  Platform,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { auth } from '../firebaseConfig';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
@@ -23,6 +27,7 @@ type RootStackParamList = {
   PotDetail: { id: number };
   AlertSettings: undefined;
   AdvancedCharts: undefined;
+  HumidityHistory: { sensorId: number };
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -38,13 +43,19 @@ const HomeScreen = () => {
   const [userName, setUserName] = useState('');
   const [humidade1, setHumidade1] = useState<number | null>(null);
   const [humidade2, setHumidade2] = useState<number | null>(null);
-  const [humidade3, setHumidade3] = useState<number | null>(null);
-  const [humidade4, setHumidade4] = useState<number | null>(null);
   const [lastUpdate, setLastUpdate] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [plantNames, setPlantNames] = useState(['Suculenta', 'Orquídea', 'Samambaia', 'Cacto']);
+  const [plantNames, setPlantNames] = useState(['Suculenta', 'Orquídea']);
+
+  // Estados para arrays de valores recentes
+  const [humidade1Array, setHumidade1Array] = useState<number[]>([]);
+  const [humidade2Array, setHumidade2Array] = useState<number[]>([]);
+
+  // Estado para modal de ações
+  const [selectedPot, setSelectedPot] = useState<number | null>(null);
+  const [showActions, setShowActions] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -57,19 +68,10 @@ const HomeScreen = () => {
 
     // Configurar monitor de humidade
     const handleHumidityChange = (humidity: number, sensorId: string) => {
-      switch (sensorId) {
-        case '1':
-          setHumidade1(humidity);
-          break;
-        case '2':
-          setHumidade2(humidity);
-          break;
-        case '3':
-          setHumidade3(humidity);
-          break;
-        case '4':
-          setHumidade4(humidity);
-          break;
+      if (sensorId === '1') {
+        setHumidade1Array(prev => [...prev.slice(-4), humidity]);
+      } else if (sensorId === '2') {
+        setHumidade2Array(prev => [...prev.slice(-4), humidity]);
       }
       setLastUpdate(Date.now());
     };
@@ -97,27 +99,19 @@ const HomeScreen = () => {
     try {
       const data = await humidityMonitor.getCurrentData();
       if (data) {
-        setHumidade1(data["Humidade Sensor 1"]);
-        setHumidade2(data["Humidade Sensor 2"]);
-        setHumidade3(data["Humidade Sensor 3"]);
-        setHumidade4(data["Humidade Sensor 4"]);
+        setHumidade1Array(data["Humidade Sensor 1"] !== null ? [data["Humidade Sensor 1"]] : []);
+        setHumidade2Array(data["Humidade Sensor 2"] !== null ? [data["Humidade Sensor 2"]] : []);
         setLastUpdate(Date.now());
         setMessage('');
       } else {
-        // Dados simulados para demonstração
-        setHumidade1(65);
-        setHumidade2(42);
-        setHumidade3(78);
-        setHumidade4(35);
+        setHumidade1Array([65]);
+        setHumidade2Array([42]);
         setLastUpdate(Date.now());
       }
     } catch (error) {
       console.error('Erro ao carregar dados iniciais:', error);
-      // Dados simulados em caso de erro
-      setHumidade1(65);
-      setHumidade2(42);
-      setHumidade3(78);
-      setHumidade4(35);
+      setHumidade1Array([65]);
+      setHumidade2Array([42]);
       setLastUpdate(Date.now());
       setMessage('Usando dados de demonstração');
     }
@@ -126,13 +120,13 @@ const HomeScreen = () => {
 
   const loadPlantNames = async () => {
     const names = [];
-    for (let i = 1; i <= 4; i++) {
+    for (let i = 1; i <= 2; i++) {
       const savedName = await AsyncStorage.getItem(`plant_name_${i}`);
       if (savedName) {
         names.push(savedName);
       } else {
-        const defaultNames = ['Suculenta', 'Orquídea', 'Samambaia', 'Cacto'];
-        names.push(defaultNames[i - 1]);
+      const defaultNames = ['Suculenta', 'Orquídea'];
+      names.push(defaultNames[i - 1]);
       }
     }
     setPlantNames(names);
@@ -150,6 +144,14 @@ const HomeScreen = () => {
     if (humidade <= 70) return { color: '#4ecdc4', status: 'Ideal' };
     if (humidade > 80) return { color: '#ff6b6b', status: 'Saturado' };
     return { color: '#3498db', status: 'Humido' };
+  }
+
+  // Função utilitária para média móvel
+  function mediaMovel(valores: number[], n = 5) {
+    if (!valores || valores.length === 0) return null;
+    const ultimos = valores.slice(-n);
+    const soma = ultimos.reduce((a, b) => a + b, 0);
+    return soma / ultimos.length;
   }
 
   const formatLastUpdate = () => {
@@ -185,19 +187,32 @@ const HomeScreen = () => {
     navigation.navigate('AlertSettings');
   };
 
-  const handleAdvancedCharts = () => {
-    navigation.navigate('AdvancedCharts');
+  // Função para abrir ações
+  const openPotActions = (potId: number) => {
+    setSelectedPot(potId);
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions({
+        options: ['Cancelar', 'Ver Histórico', 'Configurar Alertas', 'Ver Detalhes'],
+        cancelButtonIndex: 0,
+      }, (buttonIndex) => {
+        if (buttonIndex === 1) navigation.navigate('HumidityHistory', { sensorId: potId });
+        if (buttonIndex === 2) navigation.navigate('AlertSettings');
+        if (buttonIndex === 3) navigation.navigate('PotDetail', { id: potId });
+      });
+    } else {
+      setShowActions(true);
+    }
   };
 
-  const status1 = getPlantStatus(humidade1);
-  const status2 = getPlantStatus(humidade2);
-  const status3 = getPlantStatus(humidade3);
-  const status4 = getPlantStatus(humidade4);
-
-  const allHumidades = [humidade1, humidade2, humidade3, humidade4];
+  // Usa a média móvel para mostrar os valores
+  const valorSuavizado1 = mediaMovel(humidade1Array, 5);
+  const valorSuavizado2 = mediaMovel(humidade2Array, 5);
+  const status1 = getPlantStatus(valorSuavizado1);
+  const status2 = getPlantStatus(valorSuavizado2);
+  const allHumidades = [valorSuavizado1, valorSuavizado2];
   const isAllAvailable = allHumidades.every(h => h !== null);
-  const media = isAllAvailable ? Math.round(allHumidades.reduce((a, b) => a + (b || 0), 0) / 4) : null;
-  const alertCount = allHumidades.filter(h => h !== null && h < 30).length;
+  const media = isAllAvailable ? Math.round(allHumidades.reduce((a, b) => a + (b || 0), 0) / 2) : null;
+  const alertCount = allHumidades.filter(h => h !== null && (h < 30 || h > 80)).length;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -250,7 +265,7 @@ const HomeScreen = () => {
               <View style={[styles.summaryIcon, { backgroundColor: '#4ecdc4' }]}>
                 <FontAwesome5 name="seedling" size={24} color="#fff" />
               </View>
-              <Text style={styles.summaryValue}>4</Text>
+              <Text style={styles.summaryValue}>2</Text>
               <Text style={styles.summaryLabel}>Vasos Ativos</Text>
             </View>
 
@@ -272,24 +287,15 @@ const HomeScreen = () => {
               <Text style={styles.summaryLabel}>Alertas</Text>
             </View>
           </View>
-          
-          {/* Botão para Análise Avançada */}
-          <TouchableOpacity style={styles.advancedButton} onPress={handleAdvancedCharts}>
-            <View style={styles.advancedButtonContent}>
-              <Ionicons name="analytics" size={20} color="#fff" />
-              <Text style={styles.advancedButtonText}>Ver Análise Avançada</Text>
-              <Ionicons name="arrow-forward" size={16} color="#fff" />
-            </View>
-          </TouchableOpacity>
         </View>
 
         {/* Grid de vasos */}
         <View style={styles.dashboardContainer}>
           <Text style={styles.sectionTitle}>🌱 Os seus Vasos</Text>
           <View style={styles.plantsGrid}>
-            {[1, 2, 3, 4].map((item) => {
-              const currentStatus = item === 1 ? status1 : item === 2 ? status2 : item === 3 ? status3 : status4;
-              const currentHumidade = item === 1 ? humidade1 : item === 2 ? humidade2 : item === 3 ? humidade3 : humidade4;
+            {[1, 2].map((item) => {
+              const currentStatus = item === 1 ? status1 : status2;
+              const currentHumidade = item === 1 ? valorSuavizado1 : valorSuavizado2;
               const plantName = plantNames[item - 1];
 
               return (
@@ -297,7 +303,7 @@ const HomeScreen = () => {
                   style={styles.plantCard}
                   key={item}
                   activeOpacity={0.8}
-                  onPress={() => navigation.navigate('PotDetail', { id: item })}
+                  onPress={() => openPotActions(item)}
                 >
                   <View style={styles.plantCardContent}>
                     <View style={styles.plantImageContainer}>
@@ -318,7 +324,9 @@ const HomeScreen = () => {
                     <View style={styles.humidadeContainer}>
                       <MaterialCommunityIcons name="water-percent" size={16} color="#3498db" />
                       <Text style={styles.humidadeValue}>
-                        {currentHumidade !== null ? `${Math.round(currentHumidade)}%` : '--'}
+                        {item === 1
+                          ? (valorSuavizado1 !== null ? `${Math.round(valorSuavizado1)}%` : '--')
+                          : (valorSuavizado2 !== null ? `${Math.round(valorSuavizado2)}%` : '--')}
                       </Text>
                     </View>
                   </View>
@@ -346,6 +354,32 @@ const HomeScreen = () => {
       </ScrollView>
 
       {/* Botão de adicionar vasos removido */}
+
+      {/* Modal de ações rápidas para Android */}
+      {showActions && (
+        <Modal
+          transparent
+          animationType="fade"
+          visible={showActions}
+          onRequestClose={() => setShowActions(false)}
+        >
+          <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} onPress={() => setShowActions(false)} />
+          <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 20 }}>
+            <TouchableOpacity style={{ padding: 16 }} onPress={() => { setShowActions(false); navigation.navigate('HumidityHistory', { sensorId: selectedPot }); }}>
+              <Text style={{ fontSize: 18 }}>Ver Histórico</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ padding: 16 }} onPress={() => { setShowActions(false); navigation.navigate('AlertSettings'); }}>
+              <Text style={{ fontSize: 18 }}>Configurar Alertas</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ padding: 16 }} onPress={() => { setShowActions(false); navigation.navigate('PotDetail', { id: selectedPot }); }}>
+              <Text style={{ fontSize: 18 }}>Ver Detalhes</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ padding: 16 }} onPress={() => setShowActions(false)}>
+              <Text style={{ fontSize: 18, color: 'red' }}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 };

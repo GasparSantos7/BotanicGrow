@@ -113,7 +113,7 @@ const PostDetail = ({ route, navigation }: Props) => {
       Alert.alert('Sucesso', 'Comentário adicionado com sucesso');
     } catch (error: any) {
       console.error('Erro ao adicionar comentário:', error);
-      Alert.alert('Erro', 'Falha ao adicionar comentário');
+      // Removido o Alert de erro ao adicionar comentário
     } finally {
       setSubmitting(false);
     }

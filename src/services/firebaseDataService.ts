@@ -5,8 +5,6 @@ import { db, firestore } from '../firebaseConfig';
 interface HumidityData {
   "Humidade Sensor 1": number | null;
   "Humidade Sensor 2": number | null;
-  "Humidade Sensor 3": number | null;
-  "Humidade Sensor 4": number | null;
 }
 
 interface HistoricalRecord {
@@ -27,14 +25,9 @@ class FirebaseDataService {
     try {
       const snapshot1 = await get(ref(db, 'sensor/Humidade_solo_1'));
       const snapshot2 = await get(ref(db, 'sensor/Humidade_solo_2'));
-      const snapshot3 = await get(ref(db, 'sensor/Humidade_solo_3'));
-      const snapshot4 = await get(ref(db, 'sensor/Humidade_solo_4'));
-
       return {
         "Humidade Sensor 1": snapshot1.val(),
         "Humidade Sensor 2": snapshot2.val(),
-        "Humidade Sensor 3": snapshot3.val(),
-        "Humidade Sensor 4": snapshot4.val(),
       };
     } catch (error) {
       console.error('Erro ao obter dados de humidade:', error);
@@ -53,8 +46,6 @@ class FirebaseDataService {
       const sensorRefs = [
         ref(db, 'sensor/Humidade_solo_1'),
         ref(db, 'sensor/Humidade_solo_2'),
-        ref(db, 'sensor/Humidade_solo_3'),
-        ref(db, 'sensor/Humidade_solo_4'),
       ];
 
       sensorRefs.forEach((sensorRef, index) => {
@@ -86,8 +77,6 @@ class FirebaseDataService {
     const data: HumidityData = {
       "Humidade Sensor 1": null,
       "Humidade Sensor 2": null,
-      "Humidade Sensor 3": null,
-      "Humidade Sensor 4": null,
     };
 
     // Obter valores atuais de todos os sensores
