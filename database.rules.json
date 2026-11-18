@@ -1,17 +1,40 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null",
-    "sensors": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+    ".read": false,
+    ".write": false,
+    "sensor": {
+      "Humidade_solo_1": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == ",
+        ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+      },
+      "Humidade_solo_2": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == 'UID_DA_CONTA_DO_DISPOSITIVO'",
+        ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+      }
     },
-    "humidity_history": {
-      ".read": "auth != null",
-      ".write": "auth != null",
-      "$sensorId": {
-        ".indexOn": ["timestamp"]
+    "controle": {
+      "rele": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "newData.isBoolean()"
+      },
+      "manual_override": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "newData.isBoolean()"
+      },
+      "ventoinha": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "newData.isBoolean()"
+      },
+      "auto_active": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == 'UID_DA_CONTA_DO_DISPOSITIVO'",
+        ".validate": "newData.isBoolean()"
       }
     }
   }
-} 
+}
